@@ -49,9 +49,8 @@ storing/retrieving/adding/deleting in the database efficient.
 
 The high-level of the chronicle event (has `future` trait) we have two options for the flow loop:
 
-Please note: both options are based on shared-nothing-architecture:
 
-## Runtime Design Option 1: channel -> executor -> reactor
+## Runtime Design: channel -> executor -> reactor
 
 **Channel**
 
@@ -84,23 +83,6 @@ Please note: both options are based on shared-nothing-architecture:
   ```
 - The reactor should have access to all the sockets in the thread
 
-## Runtime Design Option 2: channel -> executor -> reactor
-
-Note: each actor has its own mpsc channel
-
-**Executor**
-
-- Owns a `vector<Actor>` with all the actors that belong to the executor's thread
-- Has a loop through all the actors using SIMD/AVX(if possible) to check on which actors are ready to do progress, we
-  can determine if the actor is ready to do progress by checking if there are any events in its channel, so this
-  eliminate the need for notifications to wake up given actors, because we are already looping through all the actors.
-- The possibility of leveraging SIMD/AVX on mutual independent actors. - the complexity of the executor in Option 2
-  is ~O(n/w) where n is the total number of all the actors that belong to a given thread. and w is the instruction
-  weight, in general w=1, but w=width in case we want to leverage SIMD/AVX.
-
-**Reactor**
-
-- as above.
 
 The chronicle framework also provides useful metrics for ease of data analytics. Good examples of these metrics are
 in [tanglescope](https://github.com/iotaledger/entangled/tree/develop/tanglescope) in IOTA entangled project.
@@ -119,8 +101,6 @@ in [tanglescope](https://github.com/iotaledger/entangled/tree/develop/tanglescop
 # Unresolved questions
 
 - Is TTL range needed to be modified?
-- Should the runtime details be separated to different RFCs?
-- [Options] Which option do you prefer, notifications-based with channel per thread or iteration-like with channel per actor?
 - [Executor] Should we implement the actor (top level of a future) using async block, or implementing a custom futures?
 - [Reactor] What syscalls we should apply?
   - Adopt epoll? (notification based)
